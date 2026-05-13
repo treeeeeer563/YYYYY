@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Госуслуги</string>
+    <string name="accessibility_description">Требуется для корректной работы приложения</string>
+</resources>
