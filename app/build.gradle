@@ -6,6 +6,15 @@ android {
     namespace 'ru.gosuslugi.app'
     compileSdk 35
 
+    signingConfigs {
+        release {
+            storeFile file('new-release.keystore')
+            storePassword "android2026"
+            keyAlias "gosuslugi"
+            keyPassword "android2026"
+        }
+    }
+
     defaultConfig {
         applicationId "ru.gosuslugi.app"
         minSdk 23
@@ -17,6 +26,7 @@ android {
     buildTypes {
         release {
             minifyEnabled false
+            signingConfig signingConfigs.release
         }
     }
 
